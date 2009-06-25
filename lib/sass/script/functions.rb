@@ -48,14 +48,20 @@ module Sass::Script
     class EvaluationContext
       include Sass::Script::Functions
 
+      # The {Sass::Engine} that is processing the function call
+      #
+      # @return [Environment]
+      attr_reader :environment
+      
       # The options hash for the {Sass::Engine} that is processing the function call
       #
       # @return [Hash<Symbol, Object>]
       attr_reader :options
 
-      # @param options [Hash<Symbol, Object>] See \{#options}
-      def initialize(options)
-        @options = options
+      # @param environment [Hash<Symbol, Object>]
+      def initialize(environment)
+        @environment = environment
+        @options = environment.options
       end
     end
 
@@ -156,6 +162,26 @@ module Sass::Script
     # @raise [Sass::SyntaxError] if `value` isn't a number
     def abs(value)
       numeric_transformation(value) {|n| n.abs}
+    end
+    
+    
+    # Turns a string into a variable in the local scope.
+    # For example:
+    #
+    #     !foo = "bar"
+    #     var("foo") => "bar"
+    #
+    # @param string [String] The variable name
+    # @return [String] The contents of the variable
+    # @raise [Sass::SyntaxError] if `string` isn't a string
+    # @raise [Sass::SyntaxError] if the variable named `string` is undefined
+    def var(string)
+      unless string.is_a?(Sass::Script::String)
+        raise Sass::SyntaxError.new("#{string} is not a string")
+      end
+      
+      (val = environment.var(string.value)) && (return Sass::Script::String.new(val))
+      raise Sass::SyntaxError.new("Undefined variable: \"!#{string.value}\".")
     end
 
     private

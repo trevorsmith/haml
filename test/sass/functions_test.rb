@@ -87,16 +87,25 @@ class SassFunctionTest < Test::Unit::TestCase
 
     assert_error_message("#aaaaaa is not a number for `abs'", "abs(#aaa)")
   end
-
+  
+  def test_var
+    environment = Sass::Environment.new
+    environment.set_var('foo', Sass::Script::String.new("bar"))
+    assert_equal("bar", evaluate('var("foo")', environment).to_s)
+    
+    assert_error_message("123 is not a string", "var(123)")
+    assert_error_message('Undefined variable: "!baz".', 'var("baz")')
+  end
+  
   private
-
+  
   def assert_rgb_hsl(rgb, hsl)
     hsl = hsl.map {|v| Sass::Script::Parser.parse v, 0, 0 }
-    assert_equal(rgb, Sass::Script::Functions::EvaluationContext.new({}).hsl(*hsl).value)
+    assert_equal(rgb, Sass::Script::Functions::EvaluationContext.new(Sass::Environment.new).hsl(*hsl).value)
   end
 
-  def evaluate(value)
-    Sass::Script::Parser.parse(value, 0, 0).perform(Sass::Environment.new).to_s
+  def evaluate(value, environment=Sass::Environment.new)
+    Sass::Script::Parser.parse(value, 0, 0).perform(environment).to_s
   end
 
   def assert_error_message(message, value)
